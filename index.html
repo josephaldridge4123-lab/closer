@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CBB Training Hub</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #0a0c10;
+    --surface: #12151c;
+    --surface2: #1a1e28;
+    --border: #262c3d;
+    --accent: #f5a623;
+    --text: #dde1ed;
+    --muted: #5a6180;
+    --muted2: #8891b0;
+    --green: #2ecc71;
+    --blue: #3498db;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    overflow-x: hidden;
+  }
+
+  /* Background texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: 
+      radial-gradient(ellipse at 20% 50%, rgba(245,166,35,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(52,152,219,0.04) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .hub {
+    width: 100%;
+    max-width: 860px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  .hub-header {
+    text-align: center;
+    margin-bottom: 52px;
+  }
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 52px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .logo span { color: var(--text); }
+  .sub {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: var(--muted2);
+    font-weight: 500;
+  }
+  .divider {
+    width: 60px;
+    height: 2px;
+    background: var(--accent);
+    margin: 18px auto;
+    border-radius: 1px;
+  }
+  .tagline {
+    font-size: 15px;
+    color: var(--muted2);
+    font-weight: 300;
+    max-width: 420px;
+    margin: 0 auto;
+    line-height: 1.7;
+  }
+
+  /* Cards */
+  .cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 40px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px 28px;
+    text-decoration: none;
+    color: var(--text);
+    transition: all 0.22s;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 16px 16px 0 0;
+    transition: opacity 0.2s;
+    opacity: 0.6;
+  }
+  .card.orange::before { background: var(--accent); }
+  .card.blue::before { background: var(--blue); }
+  .card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(255,255,255,0.12);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  }
+  .card.orange:hover { border-color: rgba(245,166,35,0.3); }
+  .card.blue:hover { border-color: rgba(52,152,219,0.3); }
+  .card:hover::before { opacity: 1; }
+
+  .card-icon {
+    font-size: 36px;
+    margin-bottom: 18px;
+    display: block;
+  }
+  .card-role {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.8px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .card.orange .card-role { color: var(--accent); }
+  .card.blue .card-role { color: var(--blue); }
+
+  .card-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 30px;
+    letter-spacing: 1.5px;
+    margin-bottom: 10px;
+    line-height: 1;
+  }
+  .card-desc {
+    font-size: 13px;
+    color: var(--muted2);
+    line-height: 1.65;
+    margin-bottom: 24px;
+    flex: 1;
+  }
+
+  .card-features {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-bottom: 26px;
+  }
+  .feat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--muted2);
+  }
+  .feat-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .card.orange .feat-dot { background: var(--accent); }
+  .card.blue .feat-dot { background: var(--blue); }
+
+  .card-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: all 0.18s;
+  }
+  .card.orange .card-btn {
+    background: rgba(245,166,35,0.12);
+    color: var(--accent);
+    border: 1px solid rgba(245,166,35,0.25);
+  }
+  .card.orange:hover .card-btn {
+    background: rgba(245,166,35,0.2);
+    border-color: rgba(245,166,35,0.5);
+  }
+  .card.blue .card-btn {
+    background: rgba(52,152,219,0.1);
+    color: #5dade2;
+    border: 1px solid rgba(52,152,219,0.25);
+  }
+  .card.blue:hover .card-btn {
+    background: rgba(52,152,219,0.2);
+    border-color: rgba(52,152,219,0.5);
+  }
+
+  /* Stats row */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 40px;
+  }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+  .stat-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 1px;
+    color: var(--accent);
+  }
+  .stat-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    font-weight: 600;
+    margin-top: 3px;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+  }
+  .footer span { color: var(--accent); }
+
+  @media (max-width: 600px) {
+    .cards { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .logo { font-size: 38px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hub">
+
+  <div class="hub-header">
+    <div class="logo">CBB <span>Training Hub</span></div>
+    <div class="sub">Cowboy Bail Bonds · Agent Development</div>
+    <div class="divider"></div>
+    <div class="tagline">AI-powered role-play simulators built from real CBB calls, playbooks, and bond scenarios.</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-val">9</div>
+      <div class="stat-label">Scenarios</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">2</div>
+      <div class="stat-label">Trainers</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">AI</div>
+      <div class="stat-label">Powered</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">Live</div>
+      <div class="stat-label">Scoring</div>
+    </div>
+  </div>
+
+  <div class="cards">
+
+    <!-- Appointment Setter -->
+    <a class="card blue" href="/cbb_voice_trainer.html">
+      <span class="card-icon">📞</span>
+      <div class="card-role">Appointment Setter</div>
+      <div class="card-title">Voice Trainer</div>
+      <div class="card-desc">Practice live inbound calls with AI callers — panicked moms, price shoppers, low-money situations, hard objectors. Speak out loud and the AI caller responds in real time.</div>
+      <div class="card-features">
+        <div class="feat"><div class="feat-dot"></div>Voice mic — speak and AI speaks back</div>
+        <div class="feat"><div class="feat-dot"></div>5 caller personas from real playbook</div>
+        <div class="feat"><div class="feat-dot"></div>Live stage tracker: Rapport → Close</div>
+        <div class="feat"><div class="feat-dot"></div>Hint button pulls exact CBB scripts</div>
+        <div class="feat"><div class="feat-dot"></div>Scored on Rapport, Discovery, Urgency & Close</div>
+      </div>
+      <div class="card-btn">Launch Voice Trainer →</div>
+    </a>
+
+    <!-- Closer -->
+    <a class="card orange" href="/cbb_roleplay_trainer.html">
+      <span class="card-icon">📋</span>
+      <div class="card-role">Closer / Bond Approval</div>
+      <div class="card-title">Bond Trainer</div>
+      <div class="card-desc">Train closers to evaluate real bond scenarios — green slam-dunks and high-risk approvals. Chat with AI cosigners and defendants pulled from real CBB closer chat data.</div>
+      <div class="card-features">
+        <div class="feat"><div class="feat-dot"></div>4 green bond scenarios (easy approvals)</div>
+        <div class="feat"><div class="feat-dot"></div>4 risky bond scenarios (hard decisions)</div>
+        <div class="feat"><div class="feat-dot"></div>Built from real WhatsApp closer chat</div>
+        <div class="feat"><div class="feat-dot"></div>AI cosigners behave like real callers</div>
+        <div class="feat"><div class="feat-dot"></div>Scored on Risk Assessment & Closeability</div>
+      </div>
+      <div class="card-btn">Launch Bond Trainer →</div>
+    </a>
+
+  </div>
+
+  <div class="footer">
+    Built for <span>Cowboy Bail Bonds</span> · Proprietary & Confidential · 2026
+  </div>
+
+</div>
+
+</body>
+</html>

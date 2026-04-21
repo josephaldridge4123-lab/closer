@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CBB Voice Trainer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0a0c10;
+    --surface: #12151c;
+    --surface2: #1a1e28;
+    --surface3: #222736;
+    --border: #262c3d;
+    --accent: #f5a623;
+    --accent2: #e05a2b;
+    --green: #27ae60;
+    --green-bright: #2ecc71;
+    --red: #e74c3c;
+    --yellow: #f39c12;
+    --blue: #2980b9;
+    --text: #dde1ed;
+    --muted: #5a6180;
+    --muted2: #8891b0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .logo { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 2px; color: var(--accent); }
+  .logo span { color: var(--text); }
+  .tagline { font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; border-left: 1px solid var(--border); padding-left: 16px; }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted2); }
+  .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green-bright); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+  /* ── LAYOUT ── */
+  .app { display: grid; grid-template-columns: 300px 1fr; height: calc(100vh - 57px); }
+
+  /* ── SIDEBAR ── */
+  .sidebar { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+  .sb-head { padding: 18px 16px 12px; border-bottom: 1px solid var(--border); }
+  .sb-head h3 { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); font-weight: 600; margin-bottom: 10px; }
+
+  .scenario-list { overflow-y: auto; flex: 1; padding: 8px; }
+  .s-item {
+    padding: 13px 14px; border-radius: 9px; cursor: pointer;
+    margin-bottom: 5px; border: 1px solid transparent;
+    transition: all .18s; position: relative;
+  }
+  .s-item:hover { background: var(--surface2); border-color: var(--border); }
+  .s-item.active { background: var(--surface2); border-color: var(--accent); }
+  .s-name { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+  .s-type { font-size: 11px; color: var(--muted2); margin-bottom: 7px; font-style: italic; }
+  .s-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+  .tag { font-size: 10px; padding: 2px 7px; border-radius: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+  .tag-o { background: rgba(245,166,35,.13); color: var(--accent); }
+  .tag-r { background: rgba(231,76,60,.13); color: var(--red); }
+  .tag-b { background: rgba(41,128,185,.13); color: #5dade2; }
+  .tag-g { background: rgba(39,174,96,.13); color: var(--green-bright); }
+  .diff-dot { position: absolute; top: 13px; right: 13px; width: 9px; height: 9px; border-radius: 50%; }
+
+  /* ── MAIN ── */
+  .main { display: flex; flex-direction: column; overflow: hidden; position: relative; }
+
+  /* ── SCENARIO BRIEF ── */
+  .brief {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 14px 24px; display: flex; gap: 20px; align-items: flex-start; flex-shrink: 0;
+  }
+  .brief-col { flex: 1; }
+  .b-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-weight: 600; margin-bottom: 3px; }
+  .b-val { font-size: 13px; font-weight: 500; line-height: 1.4; }
+  .b-val.mono { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--accent); }
+
+  /* ── STAGE TRACKER ── */
+  .stages {
+    background: var(--surface2); border-bottom: 1px solid var(--border);
+    padding: 10px 24px; display: flex; gap: 0; flex-shrink: 0; overflow-x: auto;
+  }
+  .stage {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .8px;
+    padding: 5px 14px; border-radius: 6px; transition: all .2s; white-space: nowrap;
+  }
+  .stage.active { background: rgba(245,166,35,.12); color: var(--accent); }
+  .stage.done { color: var(--green-bright); }
+  .stage-arrow { color: var(--muted); font-size: 10px; margin: 0 2px; }
+
+  /* ── CONVERSATION ── */
+  .convo-area { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; }
+
+  .msg { display: flex; gap: 11px; max-width: 82%; animation: fadeUp .22s ease; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(7px)} to{opacity:1;transform:translateY(0)} }
+  .msg.agent { align-self: flex-end; flex-direction: row-reverse; }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+  .msg.caller .avatar { background: var(--surface3); border: 1px solid var(--border); color: var(--accent); }
+  .msg.agent .avatar { background: #1a3a5c; color: #5dade2; border: 1px solid #1e4870; }
+  .bubble { padding: 10px 14px; border-radius: 11px; font-size: 13.5px; line-height: 1.55; }
+  .msg.caller .bubble { background: var(--surface2); border: 1px solid var(--border); border-top-left-radius: 3px; }
+  .msg.agent .bubble { background: #0f2744; border: 1px solid #1a3a5c; border-top-right-radius: 3px; }
+  .msg-time { font-size: 10px; color: var(--muted); margin-top: 4px; font-family: 'DM Mono', monospace; }
+  .msg.agent .msg-time { text-align: right; }
+
+  .typing { display: flex; gap: 11px; align-items: center; animation: fadeUp .22s ease; }
+  .typing-bubbl { background: var(--surface2); border: 1px solid var(--border); border-radius: 11px; padding: 12px 16px; display: flex; gap: 5px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted2); animation: bob 1.2s infinite; }
+  .dot:nth-child(2){animation-delay:.2s} .dot:nth-child(3){animation-delay:.4s}
+  @keyframes bob { 0%,100%{transform:translateY(0);opacity:.5} 50%{transform:translateY(-4px);opacity:1} }
+
+  .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); text-align: center; gap: 12px; }
+  .empty-state .big { font-size: 52px; opacity: .25; }
+  .empty-state p { font-size: 13px; max-width: 260px; line-height: 1.7; }
+
+  /* ── VOICE CONTROLS ── */
+  .voice-bar {
+    background: var(--surface); border-top: 1px solid var(--border);
+    padding: 16px 24px; display: flex; flex-direction: column; gap: 12px; flex-shrink: 0;
+  }
+  .voice-row { display: flex; gap: 10px; align-items: center; }
+
+  .mic-btn {
+    width: 56px; height: 56px; border-radius: 50%; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+    transition: all .2s; flex-shrink: 0; position: relative;
+  }
+  .mic-btn.idle { background: var(--surface3); border: 2px solid var(--border); color: var(--muted2); }
+  .mic-btn.idle:hover { border-color: var(--accent); color: var(--accent); transform: scale(1.05); }
+  .mic-btn.recording { background: var(--red); border: 2px solid #c0392b; color: white; animation: micPulse 1s infinite; }
+  .mic-btn.processing { background: var(--surface3); border: 2px solid var(--accent); color: var(--accent); }
+  @keyframes micPulse { 0%,100%{box-shadow:0 0 0 0 rgba(231,76,60,.5)} 50%{box-shadow:0 0 0 10px rgba(231,76,60,0)} }
+
+  .voice-status { flex: 1; }
+  .vs-label { font-size: 12px; color: var(--muted2); font-weight: 500; margin-bottom: 4px; }
+  .vs-text { font-size: 13px; color: var(--text); min-height: 18px; font-style: italic; }
+  .waveform { display: flex; gap: 3px; align-items: center; height: 24px; margin-top: 6px; }
+  .wave-bar { width: 3px; background: var(--red); border-radius: 2px; animation: wave 0.8s infinite; }
+  .wave-bar:nth-child(1){height:8px;animation-delay:0s}
+  .wave-bar:nth-child(2){height:16px;animation-delay:.1s}
+  .wave-bar:nth-child(3){height:24px;animation-delay:.2s}
+  .wave-bar:nth-child(4){height:12px;animation-delay:.3s}
+  .wave-bar:nth-child(5){height:20px;animation-delay:.15s}
+  .wave-bar:nth-child(6){height:8px;animation-delay:.25s}
+  @keyframes wave { 0%,100%{transform:scaleY(.4)} 50%{transform:scaleY(1)} }
+  .waveform.hidden { display: none; }
+
+  .action-btns { display: flex; gap: 8px; }
+  .abtn {
+    padding: 8px 16px; border-radius: 7px; font-family: 'DM Sans', sans-serif;
+    font-size: 12px; font-weight: 600; cursor: pointer; border: none; transition: all .18s;
+  }
+  .abtn-score { background: transparent; border: 1px solid var(--border); color: var(--muted2); }
+  .abtn-score:hover { border-color: var(--accent); color: var(--accent); }
+  .abtn-reset { background: transparent; border: 1px solid var(--border); color: var(--muted2); }
+  .abtn-reset:hover { border-color: var(--red); color: var(--red); }
+  .abtn-hint { background: rgba(245,166,35,.1); border: 1px solid rgba(245,166,35,.3); color: var(--accent); }
+  .abtn-hint:hover { background: rgba(245,166,35,.2); }
+
+  /* Quick text fallback */
+  .text-fallback { display: flex; gap: 8px; }
+  .text-input {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; color: var(--text); font-family: 'DM Sans', sans-serif;
+    font-size: 13px; outline: none; transition: border-color .2s;
+  }
+  .text-input:focus { border-color: var(--accent); }
+  .text-input::placeholder { color: var(--muted); }
+  .send-btn {
+    width: 42px; height: 42px; background: var(--accent); border: none; border-radius: 8px;
+    cursor: pointer; font-size: 16px; transition: all .18s;
+  }
+  .send-btn:hover { background: #e09520; }
+  .send-btn:disabled { background: var(--border); cursor: not-allowed; }
+  .mode-toggle-sm { font-size: 11px; color: var(--muted2); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+  .mode-toggle-sm:hover { color: var(--accent); }
+
+  /* ── HINT BOX ── */
+  .hint-box {
+    background: rgba(245,166,35,.07); border: 1px solid rgba(245,166,35,.25);
+    border-radius: 8px; padding: 11px 14px; font-size: 12px; color: var(--muted2);
+    line-height: 1.6; display: none;
+  }
+  .hint-box.show { display: block; }
+  .hint-box strong { color: var(--accent); }
+
+  /* ── SPEAKING INDICATOR ── */
+  .ai-speaking {
+    display: none; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--accent); font-weight: 500;
+  }
+  .ai-speaking.show { display: flex; }
+  .speaker-anim { display: flex; gap: 2px; align-items: center; }
+  .speaker-anim span { display: block; width: 3px; border-radius: 2px; background: var(--accent); animation: speak .6s infinite; }
+  .speaker-anim span:nth-child(1){height:6px;animation-delay:0s}
+  .speaker-anim span:nth-child(2){height:12px;animation-delay:.1s}
+  .speaker-anim span:nth-child(3){height:8px;animation-delay:.2s}
+  .speaker-anim span:nth-child(4){height:14px;animation-delay:.15s}
+  @keyframes speak { 0%,100%{transform:scaleY(.3)} 50%{transform:scaleY(1)} }
+
+  /* ── SCORE OVERLAY ── */
+  .score-overlay {
+    position: absolute; inset: 0; background: rgba(10,12,16,.95);
+    display: none; align-items: center; justify-content: center; z-index: 200;
+    animation: fadeIn .3s ease;
+  }
+  .score-overlay.show { display: flex; }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  .score-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 36px 44px; max-width: 540px; width: 92%; text-align: center;
+  }
+  .sc-title { font-family: 'Bebas Neue', sans-serif; font-size: 38px; letter-spacing: 2px; margin-bottom: 4px; }
+  .sc-sub { color: var(--muted2); font-size: 13px; margin-bottom: 24px; }
+  .sc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; text-align: left; }
+  .sc-item { background: var(--surface2); border-radius: 8px; padding: 11px 14px; }
+  .sc-item .sil { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 4px; }
+  .sc-item .siv { font-size: 22px; font-family: 'Bebas Neue', sans-serif; letter-spacing: 1px; }
+  .sc-feedback { background: var(--surface2); border-radius: 10px; padding: 15px; font-size: 13px; line-height: 1.65; text-align: left; margin-bottom: 20px; border-left: 3px solid var(--accent); }
+  .sc-missed { background: rgba(231,76,60,.07); border: 1px solid rgba(231,76,60,.2); border-radius: 8px; padding: 12px 14px; font-size: 12px; line-height: 1.6; text-align: left; margin-bottom: 20px; color: var(--muted2); }
+  .sc-missed strong { color: var(--red); display: block; margin-bottom: 5px; font-size: 11px; text-transform: uppercase; letter-spacing: .8px; }
+  .sc-actions { display: flex; gap: 10px; justify-content: center; }
+  .btn { padding: 10px 22px; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all .18s; }
+  .btn-p { background: var(--accent); color: #000; }
+  .btn-p:hover { background: #e09520; }
+  .btn-g { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-g:hover { border-color: var(--accent); }
+
+  /* ── PLACEHOLDER ── */
+  .placeholder { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); text-align: center; gap: 16px; padding: 40px; }
+  .placeholder .bigicon { font-size: 64px; opacity: .18; }
+  .placeholder h2 { font-family: 'Bebas Neue', sans-serif; font-size: 30px; letter-spacing: 2px; color: var(--text); opacity: .4; }
+  .placeholder p { font-size: 13px; max-width: 300px; line-height: 1.7; }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">CBB <span>Voice Trainer</span></div>
+  <div class="tagline">Appointment Setter · Live Role-Play</div>
+  <div class="header-right">
+    <div class="live-dot"></div>
+    Voice AI Active
+  </div>
+</div>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-head">
+      <h3>Select a Caller Scenario</h3>
+    </div>
+    <div class="scenario-list" id="scenarioList"></div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- Placeholder -->
+    <div class="placeholder" id="placeholder">
+      <div class="bigicon">📞</div>
+      <h2>Pick a Scenario</h2>
+      <p>Choose a caller type from the left. The AI will play the caller — you play the CBB appointment setter. Speak to respond, or type if you prefer.</p>
+    </div>
+
+    <!-- Active Convo -->
+    <div id="activeArea" style="display:none; flex-direction:column; height:100%; overflow:hidden; flex:1;">
+
+      <!-- Brief -->
+      <div class="brief" id="brief"></div>
+
+      <!-- Stage tracker -->
+      <div class="stages" id="stages">
+        <div class="stage active" id="st0">📋 Rapport</div>
+        <div class="stage-arrow">›</div>
+        <div class="stage" id="st1">🔍 Qualify</div>
+        <div class="stage-arrow">›</div>
+        <div class="stage" id="st2">💡 Discovery</div>
+        <div class="stage-arrow">›</div>
+        <div class="stage" id="st3">✅ Solutions</div>
+        <div class="stage-arrow">›</div>
+        <div class="stage" id="st4">📅 Close Appt</div>
+      </div>
+
+      <!-- Chat area -->
+      <div class="convo-area" id="convoArea">
+        <div class="empty-state" id="emptyState">
+          <div class="big">📞</div>
+          <p>Press the mic and say your opening greeting to begin the call.</p>
+        </div>
+      </div>
+
+      <!-- Hint box -->
+      <div class="hint-box" id="hintBox"></div>
+
+      <!-- Voice controls -->
+      <div class="voice-bar">
+
+        <div class="voice-row">
+          <button class="mic-btn idle" id="micBtn" onclick="toggleMic()">🎙️</button>
+          <div class="voice-status">
+            <div class="vs-label" id="vsLabel">Press mic to speak</div>
+            <div class="vs-text" id="vsText">—</div>
+            <div class="waveform hidden" id="waveform">
+              <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+              <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+            </div>
+          </div>
+          <div class="ai-speaking" id="aiSpeaking">
+            <div class="speaker-anim"><span></span><span></span><span></span><span></span></div>
+            Caller speaking...
+          </div>
+          <div class="action-btns">
+            <button class="abtn abtn-hint" onclick="toggleHint()">💡 Hint</button>
+            <button class="abtn abtn-score" id="scoreBtn" onclick="requestScore()">Score Call</button>
+            <button class="abtn abtn-reset" onclick="resetCall()">↺ Reset</button>
+          </div>
+        </div>
+
+        <!-- Text fallback -->
+        <div id="textMode" style="display:none;">
+          <div class="text-fallback">
+            <input class="text-input" id="textInput" placeholder="Type your response..." onkeydown="if(event.key==='Enter')sendText()">
+            <button class="send-btn" id="sendTextBtn" onclick="sendText()">➤</button>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:12px; padding-top:2px;">
+          <span class="mode-toggle-sm" onclick="toggleTextMode()" id="modeToggleLabel">Switch to text mode</span>
+          <span style="font-size:11px; color:var(--muted);">· Hold mic to talk, release to send</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Score overlay -->
+    <div class="score-overlay" id="scoreOverlay">
+      <div class="score-card">
+        <div class="sc-title" id="scTitle">Call Review</div>
+        <div class="sc-sub" id="scSub"></div>
+        <div class="sc-grid" id="scGrid"></div>
+        <div class="sc-feedback" id="scFeedback"></div>
+        <div class="sc-missed" id="scMissed" style="display:none;"></div>
+        <div class="sc-actions">
+          <button class="btn btn-p" onclick="closeScore()">Keep Training</button>
+          <button class="btn btn-g" onclick="resetCall()">New Call</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── SCENARIOS ──────────────────────────────────────────────────────────────
+const SCENARIOS = [
+  {
+    id: 's1',
+    name: 'Sandra Williams',
+    type: 'Panicked Mom — First Timer',
+    tags: ['tag-o:Urgency High', 'tag-b:First Time', 'tag-g:Money Ready'],
+    difficulty: 'easy',
+    diffColor: '#27ae60',
+    bondAmt: '$5,000',
+    charge: 'DWI - Misdemeanor',
+    county: 'Dallas County',
+    objective: 'Build rapport quickly, qualify the situation, create urgency, and close an appointment or start online bail.',
+    systemPrompt: `You are Sandra Williams, a 49-year-old mother calling Cowboy Bail Bonds for the first time. Your 22-year-old son Marcus was arrested last night for DWI. You are scared, a little frantic, and have never dealt with the bail bond process before. You don't know how any of this works.
+
+SITUATION:
+- Son: Marcus Williams, 22, arrested at Dallas County Jail last night around 11pm
+- Charge: DWI, bond set at $5,000
+- You have $600 cash ready right now and can get more from your sister
+- You work as a school teacher, stable income
+- This is Marcus's first arrest ever
+- You found the number by Googling "bail bonds Dallas"
+
+PERSONALITY:
+- Emotional, talking fast, slightly overwhelmed
+- Ask a LOT of questions because you don't understand the process: "How does this work?", "How long will it take?", "Do I have to come in?", "Can I do it over the phone?"
+- Respond warmly when the agent sounds calm and competent
+- You want him out TODAY — he has work tomorrow
+- You haven't eaten since you found out
+
+OBJECTIONS TO GIVE (naturally, not all at once):
+- "I didn't know how much I needed to bring"
+- "Is 600 enough to at least get started?"
+- "Can I just do this all over the phone?"
+- "How long does it take once you post the bond?"
+
+GOAL: You WILL set an appointment or do online bail IF the agent:
+1. Sounds calm and reassuring
+2. Explains the process clearly
+3. Creates urgency around getting Marcus out today
+4. Answers your questions
+
+If the agent is cold, confusing, or rushes you — hesitate and say "Let me call around a little more."
+
+IMPORTANT: Stay in character. Keep responses conversational, 2-4 sentences. Sound like a real scared mom on the phone, not a chatbot.`
+  },
+  {
+    id: 's2',
+    name: 'Tony Reyes',
+    type: 'Price Shopper — Comparing Agencies',
+    tags: ['tag-r:Skeptical', 'tag-o:Price Focused', 'tag-b:Comparing'],
+    difficulty: 'medium',
+    diffColor: '#f39c12',
+    bondAmt: '$15,000',
+    charge: 'Assault FV',
+    county: 'Tarrant County',
+    objective: 'Overcome price objections, sell the value of Cowboys, and close before he shops elsewhere.',
+    systemPrompt: `You are Tony Reyes, 38, calling about your brother Roberto who was arrested for assault family violence. You are NOT emotional — you are businesslike and trying to get the best deal. You've already called two other agencies.
+
+SITUATION:
+- Brother: Roberto Reyes, 34, Tarrant County Jail
+- Charge: Assault FV, bond $15,000
+- 10% premium = $1,500. You know what bail bonds cost.
+- You have the money but you're not going to just hand it over without shopping
+- Another agency offered you "the same thing for less" (bluffing — you want to see if Cowboys will budge)
+
+PERSONALITY:
+- Direct, a little impatient
+- "I've already called two places" — use this early
+- "What makes you different from everyone else?"
+- "The other place said they could do it for less"
+- "I don't need all the extra stuff, I just need him out"
+
+OBJECTIONS (drop these naturally):
+- "Why should I use Cowboys vs the other place I called?"
+- "Can you do better on the price?"
+- "How fast can you get him out?"
+- "Do I have to come in or can I just do it over the phone?"
+- "The other place didn't ask me all these questions"
+
+WHAT WINS YOU OVER:
+- A clear, confident "Why Cowboys" answer (court tracking, 30 years, relationships with county)
+- Agent who doesn't get flustered by pushback
+- Feeling like they actually care about Roberto, not just the money
+- Fast, clear process explanation
+
+If the agent caves on price or gets defensive: "I'm going to call around a bit more."
+If agent is sharp and confident: "Okay, what do I need to do to get started?"
+
+Keep responses 2-4 sentences, sound like a real guy on the phone.`
+  },
+  {
+    id: 's3',
+    name: 'Brenda Calhoun',
+    type: 'Low Money — Needs a Plan',
+    tags: ['tag-r:No Money Down', 'tag-o:Needs Plan', 'tag-b:Motivated'],
+    difficulty: 'medium',
+    diffColor: '#f39c12',
+    bondAmt: '$25,000',
+    charge: 'UCW - Felony',
+    county: 'Dallas County',
+    objective: 'Help her build a plan. Find other family members, create urgency, and schedule a follow-up or get commitment.',
+    systemPrompt: `You are Brenda Calhoun, 52, calling about your son Darius who was arrested for unlawful carrying of a weapon. You are motivated but you do not have the money right now.
+
+SITUATION:
+- Son: Darius Calhoun, 27, Dallas County Jail, arrested 2 days ago
+- Charge: UCW felony, bond $25,000
+- 10% = $2,500. You have maybe $400 right now.
+- You work as a home health aide, paid weekly, $600 every Friday
+- Darius's father (your ex) has some money but you haven't asked him yet
+- Darius also has a cousin, Kevin, who might help
+
+PERSONALITY:
+- Worried, loving, motivated but stressed about money
+- Not sure who else to call for help
+- Hasn't thought about asking the cousin or the father yet — needs prompting
+- Will say "I just don't know where to get that kind of money"
+- Gets more hopeful when the agent helps her think through options
+
+OBJECTIONS:
+- "I only have $400 right now"
+- "I get paid Friday but that's still not enough"
+- "I don't want to ask too many people"
+- "Can you work with what I have?"
+
+WHAT GETS HER TO COMMIT:
+- Agent helps her identify Kevin and the father as resources
+- Agent creates urgency: Darius has been in 2 days, has medication he needs
+- Agent doesn't just hang up — helps her build a plan
+- Agent sets a specific follow-up time (not vague)
+
+If agent just says "call us back when you have the money": "Okay..." (defeated, no commitment)
+If agent helps her build a plan: "Okay yes, I'll call Kevin right now. Can I call you back in an hour?"
+
+Keep responses 2-4 sentences, sound like a real anxious mom.`
+  },
+  {
+    id: 's4',
+    name: 'Derek "D" Foster',
+    type: 'Repeat Caller — Already Used Cowboys',
+    tags: ['tag-g:Return Client', 'tag-b:Knows Process', 'tag-o:Large Bond'],
+    difficulty: 'easy',
+    diffColor: '#27ae60',
+    bondAmt: '$50,000',
+    charge: 'Agg Assault',
+    county: 'Dallas County',
+    objective: 'Escalate to a closer (bonds over $10K go to sales lead), gather full intake, and build confidence.',
+    systemPrompt: `You are Derek Foster, 44, calling Cowboys because your nephew Jaylen was arrested. You used Cowboys 3 years ago for your own bond and had a great experience. You trust them.
+
+SITUATION:
+- Nephew: Jaylen Foster, 24, Dallas County Jail
+- Charge: Agg Assault, bond $50,000
+- You used Cowboys before — agent should acknowledge this and find your record
+- 10% = $5,000. You have $2,000 right now, need to pull the rest together
+- You are the stable family member — you own your home, work construction 10+ years
+
+PERSONALITY:
+- Calm, knows the drill, trusts Cowboys
+- "Y'all took care of me a few years back so I came back"
+- Slightly impatient to get moving because he knows the process
+- Will appreciate if agent acknowledges his history with them
+- Wants to know if he can do it online or needs to come in
+
+THINGS DEREK SAYS:
+- "I used y'all a few years ago, you should have me in the system"
+- "I know it's a big bond — what do I need to do?"
+- "Can I start now and bring the rest of the money in a couple days?"
+- "Is there a closer or someone I should talk to about the big stuff?"
+
+GOAL: Agent should recognize it's a $50K bond, escalate to closer/sales lead, gather intake info, and make Derek feel like he's in good hands.
+
+Keep responses 2-4 sentences, calm and direct.`
+  },
+  {
+    id: 's5',
+    name: 'Lisa Nguyen',
+    type: 'Hard Objector — Wants to Wait',
+    tags: ['tag-r:High Resistance', 'tag-r:No Urgency', 'tag-o:Needs Persuading'],
+    difficulty: 'hard',
+    diffColor: '#e74c3c',
+    bondAmt: '$10,000',
+    charge: 'Theft - Felony',
+    county: 'Collin County',
+    objective: 'Create urgency where none exists. Overcome "we can wait" mindset. Close the appointment.',
+    systemPrompt: `You are Lisa Nguyen, 35, calling about your husband Kevin who was arrested for felony theft. You are NOT in a rush. You think you might just wait it out or figure it out yourself. This is the hardest type of caller.
+
+SITUATION:
+- Husband: Kevin Nguyen, 37, Collin County Jail
+- Charge: Felony Theft, bond $10,000
+- You have the money but you're not sure it's worth it
+- Kevin has been in jail for 3 days and "seems fine"
+- You've never used a bail bond company and you're skeptical
+- Your mother-in-law keeps saying "just wait, it'll work itself out"
+
+PERSONALITY:
+- Guarded, skeptical, not emotional
+- Gives short answers
+- "He's fine, he's safe in there"
+- "I don't know if we even need to do this right now"
+- "Can't the lawyer just handle this?"
+- Passive resistance, not angry
+
+OBJECTIONS TO DROP NATURALLY:
+- "Is it even worth it? He might just stay in until his court date"
+- "The lawyer said something about getting him out but I don't understand what that means"
+- "How do I know you're legitimate and not a scam?"
+- "What if he gets arrested again while out on bond?"
+- "My mother-in-law said to just wait"
+
+WHAT OVERCOMES HER RESISTANCE:
+- Urgency around Kevin's wellbeing (sleep, food, meds, job)
+- Explanation of what happens if he stays in (job loss, can't help his own legal case)
+- Clear credibility: 30 years, court tracking, BBB
+- Agent asks about kids, job, routine — things Kevin is missing
+
+If agent creates real urgency and sounds credible: "Okay... I didn't think about his job. What do I need to do?"
+If agent just pushes: "I'll think about it and call back."
+
+Keep responses 2-4 sentences. Be flat and guarded, not mean.`
+  }
+];
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+let current = null;
+let messages = [];
+let isLoading = false;
+let isRecording = false;
+let isTextMode = false;
+let recognition = null;
+let currentStage = 0;
+let speechSynth = window.speechSynthesis;
+let currentUtterance = null;
+let msgCount = 0;
+let hintVisible = false;
+
+const STAGE_KEYWORDS = [
+  ['hello', 'hi', 'good morning', 'good afternoon', 'good evening', 'how may', 'cowboy'],
+  ['name', 'how long', 'charge', 'bond', 'jail', 'county', 'arrested'],
+  ['family', 'how are you', 'who is helping', 'put together', 'urgency', 'work', 'medication'],
+  ['we can', 'option', 'online', 'location', 'come in', 'started'],
+  ['appointment', 'expect you', 'on your way', 'directions', 'text you', 'get started']
+];
+
+const HINTS = {
+  s1: ["Try: 'Good afternoon, thank you for calling Cowboy Bail Bonds, this is [name], how may I help you?'", "Ask: 'How long has Marcus been there? We want to get him out as soon as possible.'", "Create urgency: 'Does he need to be at work tomorrow? Let's get him moving.'", "Close: 'Would you prefer to come into one of our locations or use our new online bail system?'"],
+  s2: ["Don't get defensive — say 'I totally understand, let me tell you what sets Cowboys apart.'", "Use: 'We have an entire court department that tracks every case and court date.'", "Try: 'We've been helping DFW families for almost 30 years — our relationships with the county are unmatched.'", "Close confidently: 'We can get Roberto out today. Would you prefer to come in or use our online system?'"],
+  s3: ["Ask: 'Who else in the family might want to help get Darius out?'", "Urgency: 'Has Darius had a chance to take his medications? How long has he been in?'", "Help her plan: 'If you can call Kevin right now, I can hold this and call you back in an hour.'", "Set a specific follow-up: 'I'll call you back at 3pm. Does that work?'"],
+  s4: ["Look him up in the system: 'I'm pulling you up right now — I can see your history with us.'", "Acknowledge loyalty: 'We're glad you came back to us, we appreciate that.'", "Flag the bond size: 'For a bond this size I want to make sure I connect you with our senior team right away.'", "Set next step: 'Let me get you squared away with our sales team — they handle all the larger bonds.'"],
+  s5: ["Create urgency: 'Has Kevin been able to eat or sleep properly? Does he have any medications he takes?'", "Job angle: 'If he misses work, that could become a bigger problem than the case itself.'", "Credibility: 'We've been in DFW for 30 years and we track every court date for every client.'", "Ask about kids: 'Does Kevin have any kids at home who need him? That's usually the biggest reason families move fast.'"]
+};
+
+// ── RENDER SCENARIOS ───────────────────────────────────────────────────────
+function renderScenarios() {
+  const list = document.getElementById('scenarioList');
+  list.innerHTML = SCENARIOS.map(s => `
+    <div class="s-item ${current?.id === s.id ? 'active' : ''}" onclick="selectScenario('${s.id}')">
+      <div class="diff-dot" style="background:${s.diffColor}"></div>
+      <div class="s-name">${s.name}</div>
+      <div class="s-type">${s.type}</div>
+      <div class="s-tags">
+        ${s.tags.map(t => {
+          const [cls, label] = t.split(':');
+          return `<span class="tag ${cls}">${label}</span>`;
+        }).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectScenario(id) {
+  current = SCENARIOS.find(s => s.id === id);
+  messages = []; msgCount = 0; currentStage = 0;
+  document.getElementById('placeholder').style.display = 'none';
+  document.getElementById('activeArea').style.display = 'flex';
+  renderScenarios();
+  renderBrief();
+  updateStages(0);
+  clearConvo();
+  document.getElementById('hintBox').classList.remove('show');
+  hintVisible = false;
+}
+
+function renderBrief() {
+  const s = current;
+  document.getElementById('brief').innerHTML = `
+    <div class="brief-col"><div class="b-label">Caller</div><div class="b-val"><strong>${s.name}</strong></div></div>
+    <div class="brief-col"><div class="b-label">Scenario</div><div class="b-val" style="font-size:12px;color:var(--muted2);font-style:italic;">${s.type}</div></div>
+    <div class="brief-col"><div class="b-label">Charge</div><div class="b-val mono">${s.charge}</div></div>
+    <div class="brief-col"><div class="b-label">Bond</div><div class="b-val mono" style="font-size:14px;">${s.bondAmt}</div></div>
+    <div class="brief-col" style="flex:2;"><div class="b-label">Your Goal</div><div class="b-val" style="font-size:12px;color:var(--muted2);">${s.objective}</div></div>
+  `;
+}
+
+function updateStages(stage) {
+  currentStage = stage;
+  for (let i = 0; i <= 4; i++) {
+    const el = document.getElementById('st' + i);
+    el.className = 'stage' + (i < stage ? ' done' : i === stage ? ' active' : '');
+  }
+}
+
+function clearConvo() {
+  document.getElementById('convoArea').innerHTML = `
+    <div class="empty-state" id="emptyState">
+      <div class="big">📞</div>
+      <p>Press the mic and say your greeting to begin the call.</p>
+    </div>`;
+}
+
+// ── VOICE / SPEECH ─────────────────────────────────────────────────────────
+function setupRecognition() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    document.getElementById('modeToggleLabel').textContent = 'Voice not supported — using text mode';
+    enableTextMode();
+    return null;
+  }
+  const r = new SpeechRecognition();
+  r.continuous = false;
+  r.interimResults = true;
+  r.lang = 'en-US';
+
+  r.onresult = (e) => {
+    const transcript = Array.from(e.results).map(r => r[0].transcript).join('');
+    document.getElementById('vsText').textContent = transcript;
+    if (e.results[e.results.length - 1].isFinal) {
+      stopRecording();
+      if (transcript.trim()) processAgentMessage(transcript.trim());
+    }
+  };
+  r.onerror = () => { stopRecording(); enableTextMode(); };
+  r.onend = () => { if (isRecording) stopRecording(); };
+  return r;
+}
+
+function toggleMic() {
+  if (isLoading) return;
+  if (isRecording) {
+    stopRecording();
+  } else {
+    startRecording();
+  }
+}
+
+function startRecording() {
+  if (!recognition) recognition = setupRecognition();
+  if (!recognition) return;
+  isRecording = true;
+  recognition.start();
+  const btn = document.getElementById('micBtn');
+  btn.className = 'mic-btn recording';
+  btn.textContent = '⏹';
+  document.getElementById('vsLabel').textContent = 'Listening...';
+  document.getElementById('vsText').textContent = '';
+  document.getElementById('waveform').classList.remove('hidden');
+}
+
+function stopRecording() {
+  isRecording = false;
+  if (recognition) try { recognition.stop(); } catch(e) {}
+  const btn = document.getElementById('micBtn');
+  btn.className = 'mic-btn idle';
+  btn.textContent = '🎙️';
+  document.getElementById('vsLabel').textContent = 'Press mic to speak';
+  document.getElementById('waveform').classList.add('hidden');
+}
+
+function speakText(text) {
+  if (!speechSynth) return Promise.resolve();
+  speechSynth.cancel();
+  return new Promise(resolve => {
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.rate = 0.95;
+    utt.pitch = 1.0;
+    utt.volume = 1;
+    // Pick a natural female/male voice if available
+    const voices = speechSynth.getVoices();
+    const preferred = voices.find(v => v.name.includes('Samantha') || v.name.includes('Google US English') || v.name.includes('Karen') || v.name.includes('Alex'));
+    if (preferred) utt.voice = preferred;
+    utt.onstart = () => document.getElementById('aiSpeaking').classList.add('show');
+    utt.onend = () => { document.getElementById('aiSpeaking').classList.remove('show'); resolve(); };
+    utt.onerror = () => { document.getElementById('aiSpeaking').classList.remove('show'); resolve(); };
+    currentUtterance = utt;
+    speechSynth.speak(utt);
+  });
+}
+
+// ── MESSAGING ──────────────────────────────────────────────────────────────
+function nowTime() {
+  return new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
+}
+
+function escHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+function appendMsg(role, text, time) {
+  const area = document.getElementById('convoArea');
+  const empty = document.getElementById('emptyState');
+  if (empty) empty.remove();
+
+  const init = role === 'agent' ? 'ME' : current.name.split(' ').map(w=>w[0]).join('').slice(0,2);
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.innerHTML = `
+    <div class="avatar">${init}</div>
+    <div>
+      <div class="bubble">${escHtml(text)}</div>
+      <div class="msg-time">${time}</div>
+    </div>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function showTyping() {
+  const area = document.getElementById('convoArea');
+  const init = current.name.split(' ').map(w=>w[0]).join('').slice(0,2);
+  area.insertAdjacentHTML('beforeend', `
+    <div class="typing" id="typingInd">
+      <div class="avatar" style="background:var(--surface3);border:1px solid var(--border);color:var(--accent);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;">${init}</div>
+      <div class="typing-bubbl"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+    </div>`);
+  area.scrollTop = area.scrollHeight;
+}
+
+function hideTyping() {
+  document.getElementById('typingInd')?.remove();
+}
+
+async function processAgentMessage(text) {
+  if (!text || isLoading || !current) return;
+  isLoading = true;
+  msgCount++;
+  document.getElementById('sendTextBtn') && (document.getElementById('sendTextBtn').disabled = true);
+  document.getElementById('micBtn').className = 'mic-btn processing';
+  document.getElementById('micBtn').textContent = '⏳';
+  document.getElementById('vsLabel').textContent = 'Processing...';
+
+  messages.push({ role: 'agent', text, time: nowTime() });
+  appendMsg('agent', text, nowTime());
+  detectStage(text);
+  showTyping();
+
+  // Build API messages
+  const apiMsgs = messages.slice(0,-1).map(m => ({
+    role: m.role === 'agent' ? 'user' : 'assistant',
+    content: m.text
+  }));
+  apiMsgs.push({ role: 'user', content: text });
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: current.systemPrompt + `\n\nCRITICAL: You are a CALLER on a phone call. Stay fully in character. Keep responses to 2-4 sentences max. Sound natural, like a real phone call. Never break character or acknowledge being an AI.`,
+        messages: apiMsgs
+      })
+    });
+    const data = await res.json();
+    const reply = data.content?.[0]?.text || "Sorry, can you say that again?";
+    hideTyping();
+    const t = nowTime();
+    messages.push({ role: 'caller', text: reply, time: t });
+    appendMsg('caller', reply, t);
+    if (msgCount >= 3) document.getElementById('scoreBtn').style.opacity = '1';
+    await speakText(reply);
+  } catch(e) {
+    hideTyping();
+    const t = nowTime();
+    const fallback = "Sorry, I didn't catch that — can you say that again?";
+    messages.push({ role: 'caller', text: fallback, time: t });
+    appendMsg('caller', fallback, t);
+  }
+
+  isLoading = false;
+  document.getElementById('micBtn').className = 'mic-btn idle';
+  document.getElementById('micBtn').textContent = '🎙️';
+  document.getElementById('vsLabel').textContent = 'Press mic to speak';
+  document.getElementById('vsText').textContent = '';
+  document.getElementById('sendTextBtn') && (document.getElementById('sendTextBtn').disabled = false);
+}
+
+function detectStage(text) {
+  const lower = text.toLowerCase();
+  let newStage = currentStage;
+  STAGE_KEYWORDS.forEach((kws, i) => {
+    if (i > currentStage) return;
+    if (kws.some(k => lower.includes(k))) newStage = Math.max(newStage, i + 1);
+  });
+  if (newStage !== currentStage) updateStages(Math.min(newStage, 4));
+}
+
+// ── TEXT MODE ──────────────────────────────────────────────────────────────
+function enableTextMode() {
+  isTextMode = true;
+  document.getElementById('textMode').style.display = 'block';
+  document.getElementById('micBtn').style.display = 'none';
+}
+
+function toggleTextMode() {
+  isTextMode = !isTextMode;
+  document.getElementById('textMode').style.display = isTextMode ? 'block' : 'none';
+  document.getElementById('micBtn').style.display = isTextMode ? 'none' : 'flex';
+  document.getElementById('modeToggleLabel').textContent = isTextMode ? 'Switch to voice mode' : 'Switch to text mode';
+}
+
+function sendText() {
+  const input = document.getElementById('textInput');
+  const text = input.value.trim();
+  if (!text || isLoading) return;
+  input.value = '';
+  processAgentMessage(text);
+}
+
+// ── HINT ──────────────────────────────────────────────────────────────────
+function toggleHint() {
+  hintVisible = !hintVisible;
+  const box = document.getElementById('hintBox');
+  if (!hintVisible) { box.classList.remove('show'); return; }
+  const hints = HINTS[current.id] || [];
+  const idx = Math.min(currentStage, hints.length - 1);
+  box.innerHTML = `<strong>💡 Coaching Tip:</strong> ${hints[idx]}`;
+  box.classList.add('show');
+}
+
+// ── SCORE ──────────────────────────────────────────────────────────────────
+async function requestScore() {
+  if (messages.length < 4 || isLoading) return;
+  isLoading = true;
+  speechSynth.cancel();
+
+  const transcript = messages.map(m => `${m.role === 'agent' ? 'AGENT' : 'CALLER'}: ${m.text}`).join('\n');
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: `You are a bail bond sales trainer evaluating an appointment setter call. Score the agent strictly. Return ONLY valid JSON, no other text.`,
+        messages: [{
+          role: 'user',
+          content: `Scenario: ${current.name} - ${current.type}
+Bond: ${current.bondAmt} | Charge: ${current.charge}
+Goal: ${current.objective}
+
+TRANSCRIPT:
+${transcript}
+
+Score 1-10 each. Return JSON:
+{
+  "rapport": number,
+  "discovery": number,
+  "urgency": number,
+  "closeAttempt": number,
+  "overall": number,
+  "result": "APPOINTMENT SET" | "FOLLOW-UP PLANNED" | "CALL LOST",
+  "feedback": "2-3 sentence coaching note specific to what happened in THIS call",
+  "missedOpportunities": "1-2 specific things the agent missed or should have said differently"
+}`
+        }]
+      })
+    });
+    const data = await res.json();
+    const raw = data.content?.[0]?.text || '{}';
+    const clean = raw.replace(/```json|```/g,'').trim();
+    showScore(JSON.parse(clean));
+  } catch(e) {
+    showScore({ rapport:7, discovery:6, urgency:6, closeAttempt:6, overall:6, result:'FOLLOW-UP PLANNED', feedback:'Good effort. Focus on building urgency and asking more discovery questions about who else can help.', missedOpportunities:'Ask about urgency drivers earlier. Try to identify additional cosigners.' });
+  }
+  isLoading = false;
+}
+
+function showScore(s) {
+  const resultColor = s.result === 'APPOINTMENT SET' ? 'var(--green-bright)' : s.result === 'CALL LOST' ? 'var(--red)' : 'var(--yellow)';
+  const emoji = s.result === 'APPOINTMENT SET' ? '✅' : s.result === 'CALL LOST' ? '❌' : '📋';
+
+  document.getElementById('scTitle').textContent = `${emoji} ${s.overall}/10`;
+  document.getElementById('scTitle').style.color = resultColor;
+  document.getElementById('scSub').textContent = `${s.result} · ${current.name} · ${current.type}`;
+  document.getElementById('scGrid').innerHTML = [
+    ['Rapport', s.rapport, '#3498db'],
+    ['Discovery', s.discovery, '#9b59b6'],
+    ['Urgency Created', s.urgency, '#e74c3c'],
+    ['Close Attempt', s.closeAttempt, '#27ae60']
+  ].map(([l,v,c]) => `<div class="sc-item"><div class="sil">${l}</div><div class="siv" style="color:${c}">${v}/10</div></div>`).join('');
+  document.getElementById('scFeedback').textContent = s.feedback;
+  if (s.missedOpportunities) {
+    const el = document.getElementById('scMissed');
+    el.innerHTML = `<strong>⚠️ Missed Opportunities</strong>${s.missedOpportunities}`;
+    el.style.display = 'block';
+  }
+  document.getElementById('scoreOverlay').classList.add('show');
+}
+
+function closeScore() { document.getElementById('scoreOverlay').classList.remove('show'); }
+
+function resetCall() {
+  speechSynth.cancel();
+  document.getElementById('scoreOverlay').classList.remove('show');
+  if (current) selectScenario(current.id);
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+renderScenarios();
+// Pre-load voices
+window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+</script>
+</body>
+</html>
