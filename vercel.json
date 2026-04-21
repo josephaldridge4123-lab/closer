@@ -1,1 +1,10 @@
-{"rewrites":[{"source":"/","destination":"/cbb_roleplay_trainer.html"}]}
+{
+  "functions": {
+    "api/chat.js": {
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    { "source": "/", "destination": "/index.html" }
+  ]
+}
